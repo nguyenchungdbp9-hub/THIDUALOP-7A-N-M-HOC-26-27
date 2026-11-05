@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sổ Thi Đua Lớp 7A - Quản lý Điện tử</title>
+    
+    <!-- Nhúng TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Nhúng Babel để biên dịch JSX trực tiếp trên trình duyệt -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        
+        /* Hiệu ứng nổi 3D (Floating) tự động cho cây */
+        @keyframes float3D {
+            0% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-8px) scale(1.05); }
+            100% { transform: translateY(0px) scale(1); }
+        }
+        .tree-3d-tot {
+            animation: float3D 3s ease-in-out infinite;
+            filter: drop-shadow(0 15px 10px rgba(220, 38, 38, 0.4)) brightness(1.1);
+        }
+        .tree-3d-kha {
+            animation: float3D 4s ease-in-out infinite;
+            filter: drop-shadow(0 10px 8px rgba(202, 138, 4, 0.3));
+        }
+        .tree-3d-dat {
+            animation: float3D 5s ease-in-out infinite;
+            filter: drop-shadow(0 5px 5px rgba(22, 163, 74, 0.2));
+        }
+        .tree-3d-truot {
+            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1)) grayscale(0.8);
+        }
+
+        /* Ẩn thanh cuộn nhưng vẫn cho phép cuộn */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useMemo, useEffect } from 'https://esm.sh/react@18';
+        import { createRoot } from 'https://esm.sh/react-dom@18/client';
+        
+        import { 
+            User, BookOpen, AlertTriangle, CheckCircle, 
+            XCircle, BarChart3, ShieldAlert, Users, 
+            Smartphone, Search, Filter, ShieldCheck,
+            LogOut, PlusCircle, CheckSquare, X, Download,
+            TrendingUp, TrendingDown, Minus, Calendar, Lock,
+            MessageSquare, Lightbulb, Mail
+        } from 'https://esm.sh/lucide-react@0.344.0?deps=react@18';
+
+        // --- DATA: STUDENTS ---
+        const initialStudents = [
+            { id: 'HS01', name: 'Nguyễn Gia An', group: 1 }, { id: 'HS02', name: 'Phạm Quốc An', group: 1 },
+            { id: 'HS03', name: 'Vàng Tiến An', group: 1 }, { id: 'HS04', name: 'Nguyễn Thế Anh', group: 1 },
+            { id: 'HS05', name: 'Nguyễn Thị Quỳnh Anh', group: 1 }, { id: 'HS06', name: 'Phan Thị Tú Anh', group: 1 },
+            { id: 'HS07', name: 'Nguyễn Viết Bằng', group: 1 }, { id: 'HS08', name: 'Cà Gia Bảo', group: 1 },
+            { id: 'HS09', name: 'Nguyễn Thị Thái Bảo', group: 1 }, { id: 'HS10', name: 'Nguyễn Ngọc Minh Châu', group: 1 },
+            { id: 'HS11', name: 'Hà Đặng Quỳnh Chi', group: 2 }, { id: 'HS12', name: 'Lò Diệp Chi', group: 2 },
+            { id: 'HS13', name: 'Lò Cẩm Chi', group: 2 }, { id: 'HS14', name: 'Trần Khánh Chi', group: 2 },
+            { id: 'HS15', name: 'Nguyễn Ngọc Diệp', group: 2 }, { id: 'HS16', name: 'Trần Đăng Thành Đạt', group: 2 },
+            { id: 'HS17', name: 'Hà Bảo Hân', group: 2 }, { id: 'HS18', name: 'Hoàng Ngọc Hân', group: 2 },
+            { id: 'HS19', name: 'Nguyễn Ngọc Hiếu', group: 2 }, { id: 'HS20', name: 'Nguyễn Thế Hưng', group: 3 },
+            { id: 'HS21', name: 'Nguyễn Mai Hương', group: 3 }, { id: 'HS22', name: 'Lê Bảo Khánh', group: 3 },
+            { id: 'HS23', name: 'Nguyễn Đăng Khoa', group: 3 }, { id: 'HS24', name: 'Đặng Tuệ Lâm', group: 3 },
+            { id: 'HS25', name: 'Hoàng Nhật Linh', group: 3 }, { id: 'HS26', name: 'Nguyễn Đức Mạnh', group: 3 },
+            { id: 'HS27', name: 'Lê Hiểu Minh', group: 3 }, { id: 'HS28', name: 'Nguyễn Tạ Thu Minh', group: 3 },
+            { id: 'HS29', name: 'Phạm Thảo Nguyên', group: 4 }, { id: 'HS30', name: 'Hà Hồng Phúc', group: 4 },
+            { id: 'HS31', name: 'Bùi Lan Phương', group: 4 }, { id: 'HS32', name: 'Nguyễn Trung Quân', group: 4 },
+            { id: 'HS33', name: 'Quàng Thị Bảo Trâm', group: 4 }, { id: 'HS34', name: 'Hoàng Bùi Bảo Trang', group: 4 },
+            { id: 'HS35', name: 'Đoàn Thanh Trúc', group: 4 }, { id: 'HS36', name: 'Nguyễn Khắc Vinh', group: 4 },
+            { id: 'HS37', name: 'Bùi Quang Vương', group: 4 }
+        ];
+
+        // --- DATA: 32 CRITERIA ---
+        const categories = [
+            { id: 'I', name: 'Chuyên cần và giờ giấc' },
+            { id: 'II', name: 'Trang phục và tác phong' },
+            { id: 'III', name: 'Ý thức học tập' },
+            { id: 'IV', name: 'Điện thoại' },
+            { id: 'V', name: 'Hoạt động tập thể và tinh thần trách nhiệm' },
+            { id: 'VI', name: 'Vệ sinh và bảo vệ của công' },
+            { id: 'VII', name: 'Đạo đức và ứng xử' }
+        ];
+
+        const criteriaList = [
+            { id: 1, categoryId: 'I', name: 'Đi học muộn', point: -3 },
+            { id: 2, categoryId: 'I', name: 'Nghỉ học không phép', point: -10 },
+            { id: 3, categoryId: 'I', name: 'Tự ý ra khỏi lớp, bỏ vị trí khi chưa được phép', point: -10 },
+            { id: 4, categoryId: 'I', name: 'Đi học đầy đủ, đúng giờ cả tháng', point: 5 },
+            { id: 5, categoryId: 'II', name: 'Mặc đồng phục không đúng quy định', point: -5 },
+            { id: 6, categoryId: 'II', name: 'Thiếu khăn quàng đỏ, phù hiệu theo quy định', point: -2 },
+            { id: 7, categoryId: 'II', name: 'Đi giày dép không đúng quy định', point: -2 },
+            { id: 8, categoryId: 'II', name: 'Đầu tóc, diện mạo không đúng nội quy', point: -5 },
+            { id: 9, categoryId: 'III', name: 'Quên SGK, vở ghi, đồ dùng học tập', point: -3 },
+            { id: 10, categoryId: 'III', name: 'Không làm bài tập, không học bài cũ', point: -5 },
+            { id: 11, categoryId: 'III', name: 'Nói chuyện riêng, làm việc riêng, ngủ gật', point: -5 },
+            { id: 12, categoryId: 'III', name: 'Đạt điểm 9 hoặc 10 trong bài kiểm tra', point: 3 },
+            { id: 13, categoryId: 'III', name: 'Được giáo viên bộ môn khen ngợi', point: 3 },
+            { id: 14, categoryId: 'IV', name: 'Tự ý mang điện thoại đến lớp khi chưa được phép', point: -50 },
+            { id: 15, categoryId: 'IV', name: 'Phát hiện và báo cáo trung thực bạn tự ý mang ĐT', point: 20 },
+            { id: 16, categoryId: 'V', name: 'Không nghiêm túc trong 15 phút đầu giờ', point: -3 },
+            { id: 17, categoryId: 'V', name: 'Mất trật tự, thiếu nghiêm túc trong giờ học, chào cờ', point: -5 },
+            { id: 18, categoryId: 'V', name: 'Không vệ sinh sau chào cờ, vứt rác, quên ghế', point: -3 },
+            { id: 19, categoryId: 'V', name: 'Trốn hoặc tập thể dục giữa giờ không nghiêm túc', point: -3 },
+            { id: 20, categoryId: 'V', name: 'Không thực hiện nhiệm vụ ngoại khóa, sự kiện', point: -7 },
+            { id: 21, categoryId: 'V', name: 'Tích cực tham gia văn nghệ, thể thao, phong trào', point: 7 },
+            { id: 22, categoryId: 'V', name: 'Ban cán sự hoàn thành tốt nhiệm vụ', point: 5 },
+            { id: 23, categoryId: 'VI', name: 'Tổ không hoàn thành nhiệm vụ trực nhật (trừ cả tổ)', point: -5, isGroup: true },
+            { id: 24, categoryId: 'VI', name: 'Ăn quà vặt sai quy định, xả rác', point: -5 },
+            { id: 25, categoryId: 'VI', name: 'Vẽ bậy, làm hỏng, sử dụng lãng phí CSVC', point: -10 },
+            { id: 26, categoryId: 'VII', name: 'Nói tục, chửi thề, giao tiếp thiếu văn minh', point: -7 },
+            { id: 27, categoryId: 'VII', name: 'Có lời nói, hành vi thiếu tôn trọng thầy cô, nhân viên', point: -20 },
+            { id: 28, categoryId: 'VII', name: 'Đánh nhau, đe dọa, gây gổ, cổ vũ bạo lực', point: -30 },
+            { id: 29, categoryId: 'VII', name: 'Nhặt được của rơi trả lại, giúp đỡ bạn, làm việc tốt', point: 7 },
+            { id: 30, categoryId: 'VII', name: 'Khen thưởng đột xuất', point: 10 },
+            { id: 31, categoryId: 'VII', name: 'Hành vi ảnh hưởng đến lớp (lái xe lạng lách, đăng tin sai sự thật, tiêu cực)', point: -20 },
+            { id: 32, categoryId: 'III', name: 'Quay bài, chép bài bạn, gian lận trong thi cử', point: -20 }
+        ];
+
+        // --- HELPER FUNCTIONS ---
+        const getRanking = (score, plus, minus) => {
+            let label = 'Chưa đạt'; let color = 'text-stone-600'; let bg = 'bg-stone-100 border-stone-300';
+            if (score >= 90) { label = 'Tốt'; color = 'text-red-700'; bg = 'bg-red-50 border-red-200'; }
+            else if (score >= 75) { label = 'Khá'; color = 'text-yellow-700'; bg = 'bg-yellow-50 border-yellow-200'; }
+            else if (score >= 60) { label = 'Trung bình'; color = 'text-green-700'; bg = 'bg-green-50 border-green-200'; }
+
+            let tree = '🌱';
+            let treeClass = 'text-3xl tree-3d-dat transform hover:scale-110 transition-all duration-300';
+            
+            if (plus === 0 && minus === 0) {
+                tree = '🌱';
+                treeClass = 'text-3xl tree-3d-dat transform hover:scale-110 transition-all duration-300 opacity-90';
+            } else if (score > 100) {
+                if (score >= 115) {
+                    tree = '🌳🍎';
+                    treeClass = 'text-5xl tree-3d-tot transform hover:scale-150 transition-all duration-300 z-10 relative';
+                } else if (score >= 107) {
+                    tree = '🌳🌸';
+                    treeClass = 'text-4xl tree-3d-kha transform hover:scale-125 transition-all duration-300 relative';
+                } else {
+                    tree = '🌳🌿';
+                    treeClass = 'text-4xl tree-3d-dat transform hover:scale-110 transition-all duration-300';
+                }
+            } else if (score < 100) {
+                if (score >= 90) {
+                    tree = '🥀';
+                    treeClass = 'text-3xl tree-3d-truot opacity-80 transform hover:rotate-6 transition-all duration-300';
+                } else if (score >= 75) {
+                    tree = '🍂';
+                    treeClass = 'text-3xl tree-3d-truot opacity-60 transform hover:-rotate-12 transition-all duration-300';
+                } else {
+                    tree = '🪵🐛';
+                    treeClass = 'text-2xl tree-3d-truot opacity-50 transform hover:rotate-12 transition-all duration-500 grayscale';
+                }
+            } else {
+                tree = '🌿'; 
+                treeClass = 'text-3xl tree-3d-dat transform hover:scale-110 transition-all duration-300';
+            }
+
+            return { label, color, bg, tree, treeClass };
+        };
+
+        const getCriterionStr = (id) => {
+            const c = criteriaList.find(x => x.id === id);
+            return c ? `${c.name} (${c.point > 0 ? '+' : ''}${c.point})` : 'Không xác định';
+        };
+
+        const getScoreForPeriod = (student, filterVal, isWeek, confirmedIncidents) => {
+            let score = 100;
+            let plus = 0;
+            let minus = 0;
+            let phoneViolations = 0;
+
+            let periodIncidents = [];
+            if (isWeek) {
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                periodIncidents = confirmedIncidents.filter(i => new Date(i.date) >= weekAgo);
+            } else {
+                periodIncidents = confirmedIncidents.filter(i => i.date.startsWith(filterVal));
+            }
+
+            const personal = periodIncidents.filter(i => i.studentId === student.id);
+            personal.forEach(inc => {
+                if (inc.point > 0) plus += inc.point;
+                else minus += Math.abs(inc.point);
+                if (inc.criteriaId === 14) phoneViolations++;
+            });
+
+            const groupIncidents = periodIncidents.filter(i => i.criteriaId === 23 && i.groupId === student.group);
+            groupIncidents.forEach(inc => {
+                minus += Math.abs(inc.point);
+            });
+
+            score = score + plus - minus;
+            return { score, plus, minus, phoneViolations };
+        };
+
+        // --- MAIN APP COMPONENT ---
+        function App() {
+            const [students, setStudents] = useState(initialStudents);
+            const [role, setRole] = useState(null); 
+            const [view, setView] = useState('DASHBOARD');
+            const [incidents, setIncidents] = useState([]);
+            const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
+
+            const handleLogin = (selectedRole) => {
+                setRole(selectedRole);
+                if (selectedRole === 'GVCN') setView('APPROVAL');
+                else if (selectedRole === 'HOC_SINH') setView('GARDEN');
+                else setView('RECORD');
+            };
+
+            const handleLogout = () => {
+                setRole(null);
+                setView('DASHBOARD');
+            };
+
+            return (
+                <div className="min-h-screen bg-[url('https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-fixed bg-center font-sans text-slate-800">
+                    <div className="min-h-screen bg-white/85 backdrop-blur-[6px] flex flex-col">
+                        {/* HEADER */}
+                        <header className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white shadow-lg sticky top-0 z-40">
+                            <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm shadow-sm">
+                                        <BookOpen className="w-6 h-6 text-white" />
+                                    </div>
+                                    <h1 className="text-xl md:text-2xl font-extrabold tracking-tight drop-shadow-sm">Sổ Thi Đua Lớp 7A</h1>
+                                </div>
+                                {role ? (
+                                    <div className="flex items-center gap-2 md:gap-4">
+                                        <span className="text-sm font-semibold bg-white/20 backdrop-blur-md border border-white/30 shadow-sm px-3 md:px-4 py-1.5 rounded-full flex items-center gap-2">
+                                            <User className="w-4 h-4"/>
+                                            <span className="hidden md:inline">
+                                                {role === 'GVCN' ? 'Giáo viên CN' : role === 'HOC_SINH' ? 'Học sinh' : role === 'CAN_SU' ? 'Cán sự lớp' : role === 'SAO_DO' ? 'Sao đỏ' : 'Tổ trưởng'}
+                                            </span>
+                                        </span>
+                                        <button onClick={handleLogout} className="bg-red-500/90 hover:bg-red-500 text-white p-2 rounded-full transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5" title="Đăng xuất">
+                                            <LogOut className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="hidden md:flex text-sm font-medium opacity-90 bg-white/10 px-3 py-1 rounded-full border border-white/20">Hệ thống đánh giá điểm chuẩn</div>
+                                )}
+                            </div>
+                            <div className="text-center mt-1 border-t border-white/20 pt-2 pb-2 opacity-95 italic font-bold text-sm md:text-base drop-shadow-md">
+                                ✨ “Mỗi ngày một tiến bộ – Mỗi tuần một bứt phá – Cả lớp cùng vươn xa!” ✨
+                            </div>
+                        </header>
+
+                        {/* MAIN CONTENT WRAPPER */}
+                        <main className="max-w-7xl w-full mx-auto px-4 py-8 flex-1 flex flex-col">
+                            {!role ? (
+                                <div className="flex-1 flex items-center justify-center">
+                                    <LoginScreen onLogin={handleLogin} />
+                                </div>
+                            ) : (
+                                <div className="flex flex-col lg:flex-row gap-6 h-full">
+                                    {/* SIDEBAR NAVIGATION */}
+                                    <div className="w-full lg:w-64 shrink-0">
+                                        <nav className="flex lg:flex-col gap-2 bg-white/80 backdrop-blur-xl p-3 rounded-2xl shadow-lg border border-white/50 overflow-x-auto lg:overflow-visible sticky top-24 no-scrollbar">
+                                            {(role === 'GVCN' || role === 'CAN_SU' || role === 'SAO_DO' || role === 'TO_TRUONG') && (
+                                                <button 
+                                                    onClick={() => setIsRecordModalOpen(true)}
+                                                    className="flex items-center justify-center gap-2 px-4 py-3.5 mb-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg hover:from-blue-500 hover:to-indigo-500 transition-all transform hover:-translate-y-0.5 w-full whitespace-nowrap border border-blue-500/30 font-bold shadow-md shrink-0"
+                                                >
+                                                    <PlusCircle className="w-5 h-5" />
+                                                    <span>Ghi nhận mới</span>
+                                                </button>
+                                            )}
+                                            
+                                            {role === 'GVCN' && (
+                                                <NavButton 
+                                                    active={view === 'APPROVAL'} onClick={() => setView('APPROVAL')} 
+                                                    icon={<ShieldCheck />} label="Duyệt vi phạm" 
+                                                    badge={incidents.filter(i => i.status === 'pending').length}
+                                                />
+                                            )}
+                                            
+                                            {role === 'GVCN' && (
+                                                <NavButton 
+                                                    active={view === 'CLASS_MANAGE'} onClick={() => setView('CLASS_MANAGE')} 
+                                                    icon={<Users />} label="Quản lý Tổ & Cán sự" 
+                                                />
+                                            )}
+                                            
+                                            {role === 'GVCN' && (
+                                                <NavButton 
+                                                    active={view === 'SECRETS'} onClick={() => setView('SECRETS')} 
+                                                    icon={<Lock />} label="Góc Mật (Chỉ GVCN)" 
+                                                />
+                                            )}
+                                            
+                                            <NavButton 
+                                                active={view === 'GARDEN'} onClick={() => setView('GARDEN')} 
+                                                icon={<span className="text-xl leading-none">🌳</span>} label="Vườn Cây 3D" 
+                                            />
+
+                                            <NavButton 
+                                                active={view === 'REPORT'} onClick={() => setView('REPORT')} 
+                                                icon={<BarChart3 />} label="Bảng điểm Tuần/Tháng" 
+                                            />
+                                            
+                                            <NavButton 
+                                                active={view === 'HISTORY'} onClick={() => setView('HISTORY')} 
+                                                icon={<CheckSquare />} label="Lịch sử sự việc" 
+                                            />
+
+                                            <NavButton 
+                                                active={view === 'CRITERIA'} onClick={() => setView('CRITERIA')} 
+                                                icon={<AlertTriangle />} label="Quy chế (32 Tiêu chí)" 
+                                            />
+                                        </nav>
+                                    </div>
+
+                                    {/* CONTENT AREA */}
+                                    <div className="flex-1 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60 p-4 md:p-6 min-h-[500px] overflow-hidden">
+                                        {view === 'APPROVAL' && role === 'GVCN' && (
+                                            <ApprovalView incidents={incidents} setIncidents={setIncidents} students={students} />
+                                        )}
+                                        {view === 'GARDEN' && (
+                                            <GardenView incidents={incidents} students={students} />
+                                        )}
+                                        {view === 'REPORT' && (
+                                            <ReportView incidents={incidents} students={students} />
+                                        )}
+                                        {view === 'HISTORY' && (
+                                            <HistoryView incidents={incidents} setIncidents={setIncidents} role={role} students={students} />
+                                        )}
+                                        {view === 'CRITERIA' && (
+                                            <CriteriaView />
+                                        )}
+                                        {view === 'CLASS_MANAGE' && role === 'GVCN' && (
+                                            <ClassManageView students={students} setStudents={setStudents} />
+                                        )}
+                                        {view === 'SECRETS' && role === 'GVCN' && (
+                                            <SecretsView />
+                                        )}
+                                        {view === 'RECORD' && (
+                                            <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                                                <AlertTriangle className="w-16 h-16 mb-4 text-blue-200" />
+                                                <p className="text-lg">Vui lòng chọn chức năng từ menu bên trái.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </main>
+                    </div>
+
+                    {/* RECORD MODAL */}
+                    {isRecordModalOpen && (
+                        <RecordModal 
+                            role={role} 
+                            students={students}
+                            onClose={() => setIsRecordModalOpen(false)} 
+                            onSave={(newIncident) => {
+                                setIncidents([...incidents, newIncident]);
+                                setIsRecordModalOpen(false);
+                            }}
+                        />
+                    )}
+                </div>
+            );
+        }
+
+        // --- VIEWS & COMPONENTS ---
+
+        function LoginScreen({ onLogin }) {
+            const [showGvcnLogin, setShowGvcnLogin] = useState(false);
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState('');
+
+            const handleGvcnSubmit = (e) => {
+                e.preventDefault();
+                if (password === '123456') {
+                    onLogin('GVCN');
+                } else {
+                    setError('Mật khẩu không đúng! (Mặc định: 123456)');
+                }
+            };
+
+            if (showGvcnLogin) {
+                return (
+                    <div className="w-full max-w-md bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/60 text-center animate-in fade-in zoom-in duration-300">
+                        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700 rounded-2xl shadow-inner flex items-center justify-center mx-auto mb-6">
+                            <Lock className="w-10 h-10" />
+                        </div>
+                        <h2 className="text-2xl font-extrabold text-gray-800 mb-2">Đăng nhập Admin</h2>
+                        <p className="text-gray-500 mb-6 text-sm">Dành riêng cho Giáo viên chủ nhiệm</p>
+                        
+                        <form onSubmit={handleGvcnSubmit} className="space-y-4">
+                            <div>
+                                <input 
+                                    type="password" 
+                                    placeholder="Nhập mật khẩu (123456)..." 
+                                    value={password}
+                                    onChange={e => {setPassword(e.target.value); setError('');}}
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-center font-bold tracking-widest text-lg"
+                                    autoFocus
+                                />
+                                {error && <p className="text-red-500 text-sm mt-2 font-medium">{error}</p>}
+                            </div>
+                            <button type="submit" className="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl shadow-md transition-all">
+                                Mở khóa Sổ Thi Đua
+                            </button>
+                            <button type="button" onClick={() => {setShowGvcnLogin(false); setPassword(''); setError('');}} className="w-full text-gray-500 hover:text-gray-700 font-medium py-2 mt-2">
+                                Quay lại
+                            </button>
+                        </form>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="w-full max-w-md bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/60 text-center transform transition-all hover:scale-[1.01] duration-300">
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-600 rounded-2xl shadow-inner flex items-center justify-center mx-auto mb-6 rotate-3">
+                        <ShieldAlert className="w-10 h-10 transform -rotate-3" />
+                    </div>
+                    <h2 className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-800 mb-3">Đăng nhập Hệ thống</h2>
+                    <p className="text-gray-500 mb-8 text-sm font-medium">Chọn vai trò của bạn để truy cập sổ thi đua.</p>
+                    
+                    <div className="grid gap-3.5">
+                        <button onClick={() => onLogin('HOC_SINH')} className="group relative overflow-hidden p-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 hover:text-white rounded-xl font-bold shadow-sm border border-blue-200 transition-all flex items-center justify-center gap-2 hover:shadow-md hover:scale-[1.02]">
+                            <div className="absolute inset-0 w-0 bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300 ease-out group-hover:w-full -z-10"></div>
+                            <span className="text-2xl z-10">🌳</span> <span className="z-10 text-lg">Học sinh (Xem Vườn Cây 3D)</span>
+                        </button>
+                        
+                        <div className="relative flex py-3 items-center">
+                            <div className="flex-grow border-t border-gray-200"></div>
+                            <span className="flex-shrink-0 mx-4 text-gray-400 text-xs font-bold uppercase tracking-wider">Khu vực Ghi nhận & Quản lý</span>
+                            <div className="flex-grow border-t border-gray-200"></div>
+                        </div>
+
+                        <button onClick={() => setShowGvcnLogin(true)} className="group relative overflow-hidden p-3.5 bg-white text-gray-800 hover:text-white rounded-xl font-bold shadow-sm border border-gray-300 transition-all flex items-center justify-center gap-2 hover:shadow-md">
+                            <div className="absolute inset-0 w-0 bg-gray-800 transition-all duration-300 ease-out group-hover:w-full -z-10"></div>
+                            <Lock className="w-5 h-5 z-10"/> <span className="z-10">Giáo viên chủ nhiệm</span>
+                        </button>
+                        <button onClick={() => onLogin('CAN_SU')} className="group relative overflow-hidden p-3.5 bg-white text-emerald-700 hover:text-white rounded-xl font-bold shadow-sm border border-emerald-100 transition-all flex items-center justify-center gap-2 hover:shadow-md">
+                            <div className="absolute inset-0 w-0 bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-300 ease-out group-hover:w-full -z-10"></div>
+                            <BookOpen className="w-5 h-5 z-10"/> <span className="z-10">Sổ Đầu Bài (Cán sự lớp)</span>
+                        </button>
+                        <button onClick={() => onLogin('SAO_DO')} className="group relative overflow-hidden p-3.5 bg-white text-rose-700 hover:text-white rounded-xl font-bold shadow-sm border border-rose-100 transition-all flex items-center justify-center gap-2 hover:shadow-md">
+                            <div className="absolute inset-0 w-0 bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-300 ease-out group-hover:w-full -z-10"></div>
+                            <AlertTriangle className="w-5 h-5 z-10"/> <span className="z-10">Sổ Sao Đỏ</span>
+                        </button>
+                        <button onClick={() => onLogin('TO_TRUONG')} className="group relative overflow-hidden p-3.5 bg-white text-purple-700 hover:text-white rounded-xl font-bold shadow-sm border border-purple-100 transition-all flex items-center justify-center gap-2 hover:shadow-md">
+                            <div className="absolute inset-0 w-0 bg-gradient-to-r from-purple-500 to-violet-500 transition-all duration-300 ease-out group-hover:w-full -z-10"></div>
+                            <Users className="w-5 h-5 z-10"/> <span className="z-10">Sổ Tổ Trưởng</span>
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function NavButton({ active, onClick, icon, label, badge }) {
+            return (
+                <button 
+                    onClick={onClick}
+                    className={`flex items-center justify-between px-4 py-3.5 rounded-xl transition-all duration-200 shrink-0 lg:w-full ${
+                        active ? 'bg-gradient-to-r from-blue-50 to-indigo-50/50 text-blue-700 font-bold border-b-4 lg:border-b-0 lg:border-l-4 border-blue-600 shadow-sm' : 'text-gray-600 font-medium hover:bg-gray-50 hover:text-indigo-600 border-b-4 lg:border-b-0 lg:border-l-4 border-transparent'
+                    }`}
+                >
+                    <div className="flex items-center gap-3">
+                        {React.cloneElement(icon, { className: `w-5 h-5 ${active ? 'text-blue-600' : 'text-gray-400'}` })}
+                        <span className="whitespace-nowrap">{label}</span>
+                    </div>
+                    {badge > 0 && (
+                        <span className="ml-2 bg-gradient-to-r from-red-500 to-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
+                            {badge}
+                        </span>
+                    )}
+                </button>
+            );
+        }
+
+        function ApprovalView({ incidents, setIncidents, students }) {
+            const pending = incidents.filter(i => i.status === 'pending');
+
+            const handleAction = (id, status) => {
+                setIncidents(incidents.map(inc => inc.id === id ? { ...inc, status } : inc));
+            };
+
+            if (pending.length === 0) {
+                return (
+                    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                        <CheckCircle className="w-16 h-16 mb-4 text-emerald-400" />
+                        <p className="text-lg font-medium">Tuyệt vời! Không có sự việc nào cần duyệt.</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div>
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        <ShieldCheck className="text-blue-600" /> Chờ GVCN Xác nhận
+                    </h2>
+                    <div className="space-y-4">
+                        {pending.map(inc => {
+                            const student = students.find(s => s.id === inc.studentId);
+                            const isGroup = inc.criteriaId === 23; 
+                            const targetName = isGroup ? `Tổ ${inc.groupId}` : student?.name;
+                            
+                            return (
+                                <div key={inc.id} className="bg-white border border-yellow-200 p-4 rounded-xl shadow-sm flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-bold text-lg text-gray-800">{targetName}</span>
+                                            {isGroup && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-bold">CẢ TỔ</span>}
+                                            {student?.title && !isGroup && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold">{student.title}</span>}
+                                            <span className="text-sm text-gray-500">({inc.date})</span>
+                                        </div>
+                                        <div className="text-sm font-medium text-red-600">
+                                            Lỗi / Thành tích: {getCriterionStr(inc.criteriaId)}
+                                        </div>
+                                        {inc.criteriaId === 15 && (
+                                            <div className="text-xs bg-blue-50 text-blue-700 p-2 rounded mt-2 border border-blue-100 shadow-sm">
+                                                <ShieldCheck className="w-3 h-3 inline mr-1" />
+                                                <strong>Bảo mật danh tính:</strong> Báo cáo {inc.reportedStudentId ? students.find(s => s.id === inc.reportedStudentId)?.name : 'Không rõ'} mang điện thoại.
+                                            </div>
+                                        )}
+                                        <div className="text-sm text-gray-600 mt-2">
+                                            Ghi nhận bởi: <span className="font-semibold">{inc.reporterRole}</span> - {inc.notes}
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 shrink-0 w-full md:w-auto mt-2 md:mt-0">
+                                        <button 
+                                            onClick={() => handleAction(inc.id, 'confirmed')}
+                                            className="flex-1 md:flex-none flex items-center justify-center gap-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm"
+                                        >
+                                            <CheckCircle className="w-4 h-4"/> Duyệt
+                                        </button>
+                                        <button 
+                                            onClick={() => handleAction(inc.id, 'rejected')}
+                                            className="flex-1 md:flex-none flex items-center justify-center gap-1 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg font-medium transition"
+                                        >
+                                            <XCircle className="w-4 h-4"/> Từ chối
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        function ReportView({ incidents, students }) {
+            const today = new Date();
+            const currentMonthStr = today.toISOString().substring(0, 7);
+            const [filterType, setFilterType] = useState('month');
+            const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);
+
+            const availableMonths = useMemo(() => {
+                const months = new Set(incidents.map(i => i.date.substring(0, 7)));
+                months.add(currentMonthStr);
+                return Array.from(months).sort().reverse();
+            }, [incidents, currentMonthStr]);
+
+            const calculateScores = () => {
+                const confirmedIncidents = incidents.filter(i => i.status === 'confirmed');
+                
+                let report = students.map(st => {
+                    const data = getScoreForPeriod(st, selectedMonth, filterType === 'week', confirmedIncidents);
+                    
+                    let prevData = { score: 100 }; 
+                    if (filterType === 'month') {
+                        const [year, month] = selectedMonth.split('-');
+                        const prevDate = new Date(year, parseInt(month) - 2, 1);
+                        const prevMonthStr = prevDate.toISOString().substring(0, 7);
+                        prevData = getScoreForPeriod(st, prevMonthStr, false, confirmedIncidents);
+                    }
+
+                    let trendVal = data.score - prevData.score;
+                    let trendText = "Giữ phong độ";
+                    let trendColor = "text-gray-500";
+                    if (trendVal > 0) {
+                        trendText = `Tiến bộ (+${trendVal})`;
+                        trendColor = "text-green-600";
+                    } else if (trendVal < 0) {
+                        trendText = `Sa sút (${trendVal})`;
+                        trendColor = "text-red-600";
+                    }
+
+                    return {
+                        ...st, ...data, rank: getRanking(data.score, data.plus, data.minus),
+                        trendText, trendVal, trendColor
+                    };
+                });
+
+                report.sort((a, b) => b.score - a.score);
+
+                let currentRank = 1;
+                let previousScore = null;
+                report.forEach((st, idx) => {
+                    if (previousScore !== null && st.score < previousScore) {
+                        currentRank = idx + 1;
+                    }
+                    st.position = currentRank;
+                    previousScore = st.score;
+                });
+
+                return report;
+            };
+
+            const reportData = calculateScores();
+
+            const handleExportExcel = () => {
+                const headers = ['Hang', 'STT', 'Ho va ten', 'To', 'Diem cong', 'Diem tru', 'Loi dien thoai', 'Tong diem', 'Xep loai', 'Thu hoach (Cay)', 'Nhan xet'];
+                const rows = reportData.map((st, idx) => [
+                    st.position,
+                    idx + 1,
+                    `"${st.name}"`, 
+                    st.group,
+                    st.plus,
+                    st.minus,
+                    st.phoneViolations,
+                    st.score,
+                    `"${st.rank.label}"`,
+                    `"${st.rank.tree}"`,
+                    `"${st.trendText}"`
+                ]);
+                
+                const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", `Bang_Diem_Thi_Dua_${filterType === 'month' ? selectedMonth : 'Tuan'}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            return (
+                <div className="animate-in fade-in duration-300">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <h2 className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-gray-800 to-gray-600">Bảng Tổng Kết Điểm Thi Đua</h2>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="bg-gray-100/80 backdrop-blur-sm p-1.5 rounded-xl inline-flex shadow-inner">
+                                <button 
+                                    onClick={() => setFilterType('week')}
+                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition ${filterType === 'week' ? 'bg-white shadow-sm text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    7 ngày qua
+                                </button>
+                                <button 
+                                    onClick={() => setFilterType('month')}
+                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition ${filterType === 'month' ? 'bg-white shadow-sm text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    Theo tháng
+                                </button>
+                            </div>
+
+                            {filterType === 'month' && (
+                                <div className="flex items-center bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-sm">
+                                    <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                                    <select 
+                                        value={selectedMonth} 
+                                        onChange={e => setSelectedMonth(e.target.value)}
+                                        className="bg-transparent font-bold text-gray-700 outline-none cursor-pointer text-sm"
+                                    >
+                                        {availableMonths.map(m => (
+                                            <option key={m} value={m}>Tháng {m.split('-')[1]}/{m.split('-')[0]}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            <button 
+                                onClick={handleExportExcel}
+                                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                            >
+                                <Download className="w-4 h-4"/> Xuất Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-2xl border border-gray-100 shadow-lg bg-white">
+                        <table className="w-full text-left border-collapse min-w-[800px]">
+                            <thead>
+                                <tr className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200 text-sm text-gray-600 uppercase tracking-wider">
+                                    <th className="p-4 font-bold text-center w-12 text-blue-600">Hạng</th>
+                                    <th className="p-4 font-bold text-center w-12">STT</th>
+                                    <th className="p-4 font-bold">Họ và tên</th>
+                                    <th className="p-4 font-bold text-center">Tổ</th>
+                                    <th className="p-4 font-bold text-center text-emerald-600">Cộng</th>
+                                    <th className="p-4 font-bold text-center text-rose-600">Trừ</th>
+                                    <th className="p-4 font-bold text-center">Tổng điểm</th>
+                                    <th className="p-4 font-bold">Xếp loại</th>
+                                    <th className="p-4 font-bold text-center text-green-600">Cây thành quả</th>
+                                    <th className="p-4 font-bold">Nhận xét</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {reportData.map((st, idx) => (
+                                    <tr key={st.id} className="hover:bg-blue-50/50 transition-colors duration-200 group">
+                                        <td className="p-4 text-center font-extrabold text-lg text-blue-600">
+                                            {st.position === 1 ? '🥇' : st.position === 2 ? '🥈' : st.position === 3 ? '🥉' : st.position}
+                                        </td>
+                                        <td className="p-4 text-center text-gray-400 font-semibold group-hover:text-blue-500">{idx + 1}</td>
+                                        <td className="p-4 font-bold text-gray-800">
+                                            {st.name}
+                                            {st.title && <span className="ml-2 text-xs bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-2 py-0.5 rounded-full font-bold shadow-sm">{st.title}</span>}
+                                            {st.phoneViolations > 0 && (
+                                                <span title="Vi phạm điện thoại" className="ml-2 inline-flex items-center text-xs text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded-full font-semibold border border-rose-100">
+                                                    <Smartphone className="w-3 h-3 mr-1"/> x{st.phoneViolations}
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="p-4 text-center text-gray-600 font-medium">{st.group}</td>
+                                        <td className="p-4 text-center font-bold text-emerald-600 bg-emerald-50/30">{st.plus > 0 ? `+${st.plus}` : '-'}</td>
+                                        <td className="p-4 text-center font-bold text-rose-600 bg-rose-50/30">{st.minus > 0 ? `-${st.minus}` : '-'}</td>
+                                        <td className="p-4 text-center font-extrabold text-lg text-gray-800 bg-gray-50/50">{st.score}</td>
+                                        <td className="p-4">
+                                            <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-sm ${st.rank.bg} ${st.rank.color} border`}>
+                                                {st.rank.label}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            <div className={`inline-block cursor-help ${st.rank.treeClass}`} title={`Hạt mầm -> Ra lá -> Đậu quả: ${st.rank.label}`}>
+                                                {st.rank.tree}
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className={`flex items-center gap-1.5 text-sm font-bold ${st.trendColor}`}>
+                                                {st.trendVal > 0 ? <TrendingUp className="w-4 h-4" /> : st.trendVal < 0 ? <TrendingDown className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+                                                {st.trendText}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        function GardenView({ incidents, students }) {
+            const today = new Date();
+            const currentMonthStr = today.toISOString().substring(0, 7);
+            const [filterType, setFilterType] = useState('week');
+            const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);
+
+            const calculateScores = () => {
+                const confirmedIncidents = incidents.filter(i => i.status === 'confirmed');
+                
+                let report = students.map(st => {
+                    const data = getScoreForPeriod(st, selectedMonth, filterType === 'week', confirmedIncidents);
+                    return { ...st, ...data, rank: getRanking(data.score, data.plus, data.minus) };
+                });
+
+                report.sort((a, b) => b.score - a.score);
+                let currentRank = 1;
+                let previousScore = null;
+                report.forEach((st, idx) => {
+                    if (previousScore !== null && st.score < previousScore) {
+                        currentRank = idx + 1;
+                    }
+                    st.position = currentRank;
+                    previousScore = st.score;
+                });
+                return report;
+            };
+
+            const reportData = calculateScores();
+            const groups = [1, 2, 3, 4];
+
+            return (
+                <div className="bg-gradient-to-b from-sky-50 to-green-50 p-6 rounded-2xl border border-green-100 shadow-inner animate-in fade-in duration-300">
+                    <div className="text-center mb-8">
+                        <h2 className="text-3xl font-extrabold text-green-700 mb-2 drop-shadow-sm">🌳 VƯỜN CÂY THI ĐUA LỚP 7A 🌳</h2>
+                        <p className="text-gray-600 font-medium">Mỗi học sinh là một mầm xanh. Hãy chăm ngoan để cây ra quả ngọt nhé!</p>
+                        
+                        <div className="flex justify-center items-center gap-3 mt-4">
+                            <div className="bg-white/80 backdrop-blur-sm p-1.5 rounded-xl inline-flex shadow-sm border border-green-100">
+                                <button 
+                                    onClick={() => setFilterType('week')}
+                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition ${filterType === 'week' ? 'bg-green-500 text-white shadow-md' : 'text-gray-500 hover:text-green-600'}`}
+                                >
+                                    Thành quả Tuần này
+                                </button>
+                                <button 
+                                    onClick={() => setFilterType('month')}
+                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition ${filterType === 'month' ? 'bg-green-500 text-white shadow-md' : 'text-gray-500 hover:text-green-600'}`}
+                                >
+                                    Thành quả Tháng này
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-8">
+                        {groups.map(g => (
+                            <div key={g} className="bg-white/60 p-5 rounded-2xl shadow-sm border border-green-100">
+                                <h3 className="text-xl font-bold text-green-800 mb-4 border-b border-green-200 pb-2 flex items-center gap-2">
+                                    <Users className="w-5 h-5"/> Khu vườn Tổ {g}
+                                </h3>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                    {reportData.filter(st => st.group === g).map(st => (
+                                        <div key={st.id} className="bg-white p-2 rounded-xl shadow-md border-b-4 border-green-300 flex flex-col items-center justify-end h-44 relative group hover:-translate-y-1 transition-all duration-300">
+                                            <div className="absolute top-2 right-2 font-bold text-xs bg-gray-50 px-2 py-0.5 rounded-full text-gray-600 border border-gray-200 z-10">
+                                                {st.score}đ
+                                            </div>
+                                            {st.position <= 3 && (
+                                                <div className="absolute top-2 left-2 text-xl drop-shadow-md z-20">
+                                                    {st.position === 1 ? '🥇' : st.position === 2 ? '🥈' : '🥉'}
+                                                </div>
+                                            )}
+                                            
+                                            <div className="flex-1 flex items-end justify-center pb-2 w-full mt-4">
+                                                <div className={st.rank.treeClass} title={`Xếp loại: ${st.rank.label}`}>{st.rank.tree}</div>
+                                            </div>
+                                            
+                                            <div className="text-center font-bold text-[11px] sm:text-xs text-gray-700 w-full pt-1.5 mt-1 border-t border-gray-100 break-words line-clamp-2 leading-tight h-9 flex items-center justify-center">
+                                                {st.name}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function HistoryView({ incidents, setIncidents, role, students }) {
+            const visibleIncidents = [...incidents].reverse().filter(inc => {
+                if (inc.criteriaId === 15 && role !== 'GVCN') return false; 
+                return true;
+            });
+
+            const handleDelete = (id) => {
+                setIncidents(incidents.filter(i => i.id !== id));
+            };
+
+            return (
+                <div className="animate-in fade-in duration-300">
+                    <h2 className="text-xl font-bold mb-2">Lịch sử ghi nhận</h2>
+                    <p className="text-sm text-gray-500 mb-4">Giáo viên chủ nhiệm có thể xóa các ghi nhận nếu có sự nhầm lẫn để hệ thống tính lại điểm.</p>
+                    <div className="space-y-3">
+                        {visibleIncidents.length === 0 ? (
+                            <div className="p-4 text-center text-gray-500 italic bg-gray-50 rounded-lg border border-gray-100">
+                                Chưa có sự việc nào được ghi nhận.
+                            </div>
+                        ) : visibleIncidents.map(inc => {
+                            const student = students.find(s => s.id === inc.studentId);
+                            const isGroup = inc.criteriaId === 23;
+                            const c = criteriaList.find(x => x.id === inc.criteriaId);
+                            
+                            return (
+                                <div key={inc.id} className="p-3 border border-gray-100 rounded-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between hover:bg-gray-50 transition bg-white">
+                                    <div className="mb-2 sm:mb-0">
+                                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                                            <span className="font-semibold text-gray-800">{isGroup ? `Tổ ${inc.groupId}` : student?.name}</span>
+                                            <span className="text-xs text-gray-400">{inc.date}</span>
+                                            {inc.status === 'confirmed' && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Đã duyệt</span>}
+                                            {inc.status === 'pending' && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold">Chờ duyệt</span>}
+                                            {inc.status === 'rejected' && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">Từ chối</span>}
+                                        </div>
+                                        <div className="text-sm text-gray-600 max-w-xl line-clamp-2">
+                                            <span className="font-medium">{c?.name}</span> • Ghi bởi: {inc.reporterRole} {inc.notes && `- ${inc.notes}`}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4 shrink-0 justify-end">
+                                        <div className={`font-extrabold text-lg ${c?.point > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {c?.point > 0 ? '+' : ''}{c?.point}
+                                        </div>
+                                        {role === 'GVCN' && (
+                                            <button 
+                                                onClick={() => handleDelete(inc.id)}
+                                                className="flex items-center gap-1 text-xs bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border border-red-100 px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm"
+                                                title="Xóa do nhầm lẫn"
+                                            >
+                                                <X className="w-3 h-3"/> Xóa
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        function CriteriaView() {
+            return (
+                <div className="animate-in fade-in duration-300">
+                    <div className="mb-4">
+                        <h2 className="text-xl font-bold text-gray-800">Danh mục 32 Tiêu chí chính thức</h2>
+                        <p className="text-sm text-gray-500">Mỗi học sinh mặc định có 100 điểm/tuần. Mức điểm là cố định và không thể thay đổi khi ghi nhận.</p>
+                    </div>
+                    
+                    <div className="space-y-6">
+                        {categories.map(cat => {
+                            const crits = criteriaList.filter(c => c.categoryId === cat.id);
+                            if(crits.length === 0) return null;
+                            return (
+                                <div key={cat.id} className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                    <div className="bg-gradient-to-r from-gray-100 to-gray-50 px-4 py-2.5 font-bold text-gray-700 border-b border-gray-200">
+                                        {cat.id}. {cat.name}
+                                    </div>
+                                    <div className="divide-y divide-gray-100 bg-white">
+                                        {crits.map((c) => (
+                                            <div key={c.id} className="flex justify-between items-center p-3 hover:bg-gray-50 transition">
+                                                <div className="text-sm text-gray-700 pr-4">
+                                                    <span className="font-semibold text-gray-500 mr-2">{c.id}.</span>
+                                                    {c.name}
+                                                </div>
+                                                <div className={`shrink-0 font-bold w-12 text-center rounded py-1 text-sm shadow-sm border ${
+                                                    c.point > 0 ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-600 border-red-100'
+                                                }`}>
+                                                    {c.point > 0 ? '+' : ''}{c.point}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        function RecordModal({ role, students, onClose, onSave }) {
+            const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+            const [criteriaId, setCriteriaId] = useState('');
+            const [studentId, setStudentId] = useState('');
+            const [groupId, setGroupId] = useState('');
+            const [notes, setNotes] = useState('');
+            const [reportedStudentId, setReportedStudentId] = useState('');
+
+            const selectedCriteria = criteriaList.find(c => c.id === parseInt(criteriaId));
+            const isGroupEvent = selectedCriteria?.isGroup;
+            const isPhoneReport = selectedCriteria?.id === 15;
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!criteriaId) return;
+                if (isGroupEvent && !groupId) return;
+                if (!isGroupEvent && !studentId) return;
+                if (isPhoneReport && !reportedStudentId) return;
+
+                const newInc = {
+                    id: 'INC_' + Date.now(),
+                    criteriaId: parseInt(criteriaId),
+                    studentId: isGroupEvent ? null : studentId,
+                    groupId: isGroupEvent ? parseInt(groupId) : null,
+                    reportedStudentId: isPhoneReport ? reportedStudentId : null,
+                    point: selectedCriteria.point,
+                    reporterRole: role,
+                    date,
+                    status: 'pending',
+                    notes
+                };
+
+                onSave(newInc);
+            };
+
+            return (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50/50 rounded-t-2xl">
+                            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <PlusCircle className="text-blue-600"/> Ghi nhận vi phạm/tuyên dương
+                            </h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-1 transition">
+                                <X className="w-5 h-5"/>
+                            </button>
+                        </div>
+
+                        <div className="p-5 overflow-y-auto custom-scrollbar">
+                            <form id="record-form" onSubmit={handleSubmit} className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1.5">Ngày ghi nhận</label>
+                                    <input 
+                                        type="date" required value={date} onChange={e => setDate(e.target.value)}
+                                        className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1.5">Lỗi / Thành tích (32 Tiêu chí)</label>
+                                    <select 
+                                        required value={criteriaId} onChange={e => {
+                                            setCriteriaId(e.target.value);
+                                            setStudentId(''); setGroupId(''); setReportedStudentId('');
+                                        }}
+                                        className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition bg-white"
+                                    >
+                                        <option value="">-- Chọn tiêu chí --</option>
+                                        {categories.map(cat => (
+                                            <optgroup key={cat.id} label={`${cat.id}. ${cat.name}`}>
+                                                {criteriaList.filter(c => c.categoryId === cat.id).map(c => (
+                                                    <option key={c.id} value={c.id}>
+                                                        {c.id}. {c.name} ({c.point > 0 ? '+' : ''}{c.point})
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {selectedCriteria && (
+                                    <div className={`p-3 rounded-xl flex items-center gap-2 text-sm font-bold border shadow-sm ${selectedCriteria.point > 0 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                                        Điểm tự động: {selectedCriteria.point > 0 ? '+' : ''}{selectedCriteria.point} điểm
+                                    </div>
+                                )}
+
+                                {isGroupEvent ? (
+                                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <label className="block text-sm font-bold text-gray-700 mb-1.5">Chọn Tổ</label>
+                                        <select 
+                                            required value={groupId} onChange={e => setGroupId(e.target.value)}
+                                            className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm bg-white"
+                                        >
+                                            <option value="">-- Chọn tổ --</option>
+                                            <option value="1">Tổ 1</option>
+                                            <option value="2">Tổ 2</option>
+                                            <option value="3">Tổ 3</option>
+                                            <option value="4">Tổ 4</option>
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <label className="block text-sm font-bold text-gray-700 mb-1.5">
+                                            {isPhoneReport ? 'Người phát hiện & Báo cáo (Bảo mật)' : 'Chọn Học sinh'}
+                                        </label>
+                                        <select 
+                                            required value={studentId} onChange={e => setStudentId(e.target.value)}
+                                            className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm bg-white"
+                                        >
+                                            <option value="">-- Chọn học sinh --</option>
+                                            {students.map(s => (
+                                                <option key={s.id} value={s.id}>{s.name} (Tổ {s.group}) {s.title ? `- ${s.title}` : ''}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {isPhoneReport && (
+                                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-inner animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <label className="block text-sm font-bold text-blue-800 mb-2 flex items-center gap-1.5">
+                                            <Smartphone className="w-4 h-4"/> Ai mang điện thoại trái phép? (Cần GVCN xác minh)
+                                        </label>
+                                        <select 
+                                            required value={reportedStudentId} onChange={e => setReportedStudentId(e.target.value)}
+                                            className="w-full border border-blue-300 rounded-xl p-2.5 outline-none mb-2 bg-white focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="">-- Chọn bạn vi phạm --</option>
+                                            {students.filter(s => s.id !== studentId).map(s => (
+                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                            ))}
+                                        </select>
+                                        <p className="text-xs text-blue-600 font-medium leading-relaxed">
+                                            * Hệ thống sẽ tự động cộng điểm sau khi GVCN kiểm tra và xác nhận sự việc có thật. Danh tính người báo cáo tuyệt đối được giữ kín.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1.5">Nội dung chi tiết / Minh chứng</label>
+                                    <textarea 
+                                        value={notes} onChange={e => setNotes(e.target.value)}
+                                        rows={3} placeholder="Mô tả cụ thể sự việc hoặc ghi chú..."
+                                        className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-sm"
+                                    ></textarea>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl flex justify-end gap-3">
+                            <button type="button" onClick={onClose} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition">
+                                Hủy bỏ
+                            </button>
+                            <button type="submit" form="record-form" className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                                Gửi duyệt
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function ClassManageView({ students, setStudents }) {
+            const handleGroupChange = (id, newGroup) => {
+                setStudents(students.map(s => s.id === id ? { ...s, group: parseInt(newGroup) || '' } : s));
+            };
+            const handleTitleChange = (id, newTitle) => {
+                setStudents(students.map(s => s.id === id ? { ...s, title: newTitle } : s));
+            };
+
+            return (
+                <div className="animate-in fade-in duration-300">
+                    <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                        <Users className="text-blue-600" /> Quản lý Tổ & Phân công nhiệm vụ
+                    </h2>
+                    <p className="text-sm text-gray-500 mb-6">
+                        Giáo viên có thể cập nhật lại Tổ (khi học sinh đổi chỗ) và nhập chức vụ (Tổ trưởng, Lớp trưởng, Sao đỏ...). Chức vụ sẽ được tự động hiển thị cạnh tên học sinh trong các bảng báo cáo và danh sách.
+                    </p>
+                    
+                    <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm">
+                        <table className="w-full text-left border-collapse bg-white min-w-[600px]">
+                            <thead>
+                                <tr className="bg-gradient-to-r from-gray-100 to-gray-50 border-b border-gray-200 text-sm text-gray-600">
+                                    <th className="p-4 font-bold text-center w-16">STT</th>
+                                    <th className="p-4 font-bold">Họ và tên</th>
+                                    <th className="p-4 font-bold text-center w-32">Tổ</th>
+                                    <th className="p-4 font-bold">Chức vụ / Nhiệm vụ</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {students.map((st, idx) => (
+                                    <tr key={st.id} className="hover:bg-blue-50/30 transition">
+                                        <td className="p-4 text-center text-gray-500 font-semibold">{idx + 1}</td>
+                                        <td className="p-4 font-bold text-gray-800">{st.name}</td>
+                                        <td className="p-4 text-center">
+                                            <input 
+                                                type="number" 
+                                                min="1" max="10"
+                                                value={st.group || ''}
+                                                onChange={(e) => handleGroupChange(st.id, e.target.value)}
+                                                className="w-16 border border-gray-300 rounded-lg p-2 text-center outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold shadow-inner"
+                                            />
+                                        </td>
+                                        <td className="p-4">
+                                            <input 
+                                                type="text" 
+                                                placeholder="VD: Lớp trưởng, Tổ trưởng..."
+                                                value={st.title || ''}
+                                                onChange={(e) => handleTitleChange(st.id, e.target.value)}
+                                                className="w-full max-w-md border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500 text-sm shadow-inner"
+                                            />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        function SecretsView() {
+            const [notes, setNotes] = useState([
+                { id: 1, type: 'gop_y', content: 'Có ý kiến phản ánh một số bạn mang đồ ăn vặt vào lớp giấu dưới ngăn bàn.', date: '2026-11-04' },
+                { id: 2, type: 'bat_mi', content: 'Kế hoạch tuần tới: Thưởng trà sữa cho tổ có điểm thi đua cao nhất để khích lệ tinh thần!', date: '2026-11-05' }
+            ]);
+            const [newNote, setNewNote] = useState('');
+            const [type, setType] = useState('gop_y');
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if(!newNote.trim()) return;
+                setNotes([{ id: Date.now(), type, content: newNote, date: new Date().toISOString().split('T')[0] }, ...notes]);
+                setNewNote('');
+            };
+
+            const handleDelete = (id) => {
+                setNotes(notes.filter(n => n.id !== id));
+            };
+
+            return (
+                <div className="animate-in fade-in duration-300 h-full">
+                    <div className="flex flex-col lg:flex-row gap-6 h-full">
+                        <div className="w-full lg:w-1/3">
+                            <div className="bg-gradient-to-br from-purple-700 via-purple-600 to-indigo-800 rounded-2xl p-6 text-white shadow-xl lg:sticky top-24">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <Lock className="w-8 h-8 text-purple-200" />
+                                    <h2 className="text-2xl font-extrabold tracking-tight">Góc Mật GVCN</h2>
+                                </div>
+                                <p className="text-purple-100 text-sm mb-6 leading-relaxed">Khu vực tuyệt mật. Chỉ Giáo viên chủ nhiệm mới có thể xem góp ý ẩn danh, ghi chú chiến lược, kế hoạch bật mí dành riêng cho lớp.</p>
+                                
+                                <form onSubmit={handleAdd} className="space-y-4 bg-white/10 p-5 rounded-xl backdrop-blur-md border border-white/20 shadow-inner">
+                                    <div>
+                                        <label className="block text-xs font-bold text-purple-200 mb-1.5 uppercase tracking-wider">Phân loại</label>
+                                        <select 
+                                            value={type} onChange={e => setType(e.target.value)}
+                                            className="w-full bg-white/20 border border-white/30 rounded-lg p-2.5 text-white outline-none focus:ring-2 focus:ring-purple-300 [&>option]:text-gray-800 transition shadow-sm"
+                                        >
+                                            <option value="gop_y">📥 Góp ý / Phản ánh</option>
+                                            <option value="bat_mi">💡 Bật mí / Kế hoạch</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-purple-200 mb-1.5 uppercase tracking-wider">Nội dung mật</label>
+                                        <textarea 
+                                            value={newNote} onChange={e => setNewNote(e.target.value)}
+                                            rows="4" required placeholder="Nhập nội dung bí mật..."
+                                            className="w-full bg-white/20 border border-white/30 rounded-lg p-2.5 text-white placeholder-purple-200 outline-none focus:ring-2 focus:ring-purple-300 resize-none transition shadow-sm"
+                                        ></textarea>
+                                    </div>
+                                    <button type="submit" className="w-full bg-white text-purple-800 font-bold py-3 rounded-xl hover:bg-purple-50 transition shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                                        Lưu bảo mật
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div className="w-full lg:w-2/3 space-y-4">
+                            <h3 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-2">
+                                <MessageSquare className="w-6 h-6 text-purple-600"/> Danh sách Ghi chú mật
+                            </h3>
+                            {notes.length === 0 ? (
+                                <div className="text-center p-12 text-gray-400 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center">
+                                    <Lock className="w-12 h-12 mb-3 text-gray-300" />
+                                    <span>Chưa có dữ liệu mật nào được lưu trữ.</span>
+                                </div>
+                            ) : (
+                                <div className="grid gap-4">
+                                    {notes.map(note => (
+                                        <div key={note.id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition group relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                            <div className={`absolute top-0 left-0 w-1.5 h-full ${note.type === 'gop_y' ? 'bg-orange-400' : 'bg-purple-500'}`}></div>
+                                            <div className="pl-3 w-full">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className={`text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm ${
+                                                        note.type === 'gop_y' ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-purple-100 text-purple-700 border border-purple-200'
+                                                    }`}>
+                                                        {note.type === 'gop_y' ? <Mail className="w-3.5 h-3.5"/> : <Lightbulb className="w-3.5 h-3.5"/>}
+                                                        {note.type === 'gop_y' ? 'Góp ý / Phản ánh' : 'Bật mí / Kế hoạch'}
+                                                    </span>
+                                                    <span className="text-xs text-gray-400 font-bold bg-gray-50 px-2 py-1 rounded-full border border-gray-100">{note.date}</span>
+                                                </div>
+                                                <p className="text-gray-700 whitespace-pre-wrap text-sm md:text-base font-medium leading-relaxed">
+                                                    {note.content}
+                                                </p>
+                                            </div>
+                                            <button 
+                                                onClick={() => handleDelete(note.id)}
+                                                className="opacity-100 lg:opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 transition p-2 bg-gray-50 hover:bg-red-50 rounded-xl border border-transparent hover:border-red-100 shrink-0"
+                                                title="Xóa vĩnh viễn"
+                                            >
+                                                <X className="w-5 h-5"/>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
